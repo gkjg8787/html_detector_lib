@@ -46,17 +46,24 @@ jobs:
           args: --release --out dist
           # Linuxビルド時のみ、互換性の高い manylinux を使用する
           manylinux: auto
-          
+
       - name: Test import
-        # Windows と Linux/macOS でコマンドを分ける
         shell: bash
         run: |
-          # dist フォルダにある wheel をインストール
-          # (ビルドしたばかりのファイルをワイルドカードで指定)
-          pip install dist/*.whl
+          python -m venv test_env
           
-          # インポートできるか確認
-          # 成功すれば何も出力されず終了コード 0、失敗すればエラーで Job が止まる
+          # Windows/Linux/Mac共通で通るパス指定
+          if [ "${{ runner.os }}" = "Windows" ]; then
+            source test_env/Scripts/activate
+          else
+            source test_env/bin/activate
+          fi
+
+          pip install dist/*.whl
+
+          mkdir test_dir
+          cd test_dir
+          
           python -c "import html_detector; print('Import check passed!')"
 
       - name: Upload artifacts
