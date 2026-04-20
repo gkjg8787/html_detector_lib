@@ -26,7 +26,7 @@ jobs:
           # macOS (Apple Silicon & Intel)
           - os: macos-latest
             target: aarch64-apple-darwin
-          - os: macos-latest
+          - os: macos-13
             target: x86_64-apple-darwin
 
     steps:
