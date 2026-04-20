@@ -1,0 +1,84 @@
+name: CI
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'v*' # v0.1.0 などのタグで発動
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build ${{ matrix.target }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Linux (汎用的な manylinux 形式)
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+          # Windows
+          - os: windows-latest
+            target: x64
+          # macOS (Apple Silicon & Intel)
+          - os: macos-latest
+            target: aarch64-apple-darwin
+          - os: macos-latest
+            target: x86_64-apple-darwin
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10' # ビルド用。成果物は abi3 指定がなければこのVer優先
+
+      - name: Build wheels
+        uses: PyO3/maturin-action@v1
+        with:
+          target: ${{ matrix.target }}
+          # --release: 最適化
+          # --out: 出力先ディレクトリ
+          args: --release --out dist
+          # Linuxビルド時のみ、互換性の高い manylinux を使用する
+          manylinux: auto
+          
+      - name: Test import
+        # Windows と Linux/macOS でコマンドを分ける
+        shell: bash
+        run: |
+          # dist フォルダにある wheel をインストール
+          # (ビルドしたばかりのファイルをワイルドカードで指定)
+          pip install dist/*.whl
+          
+          # インポートできるか確認
+          # 成功すれば何も出力されず終了コード 0、失敗すればエラーで Job が止まる
+          python -c "import html_detector; print('Import check passed!')"
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: wheels-${{ matrix.target }}
+          path: dist
+
+  release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/')
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          pattern: wheels-*
+          merge-multiple: true
+
+      - name: Publish to GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*
+          generate_release_notes: true

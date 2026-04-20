@@ -1,0 +1,13 @@
+[package]
+name = "html_detector"
+version = "0.1.0"
+edition = "2024"
+
+[lib]
+name = "_html_detector"
+crate-type = ["cdylib"]
+
+[dependencies]
+pyo3 = { version = "0.28.2", features = ["extension-module"] }
+regex = "1.10"
+kuchiki = "0.8"
