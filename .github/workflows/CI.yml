@@ -43,7 +43,7 @@ jobs:
           target: ${{ matrix.target }}
           # --release: 最適化
           # --out: 出力先ディレクトリ
-          args: --release --out dist
+          args: --release --out dist --interpreter python3.10
           # Linuxビルド時のみ、互換性の高い manylinux を使用する
           manylinux: auto
 
