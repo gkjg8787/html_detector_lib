@@ -8,8 +8,8 @@ from .models import (
     SelectData,
     OptionData,
     CustomSelectData,
-    MatchRule,
-    ExtractSelectOption,
+    OptionMatchRule,
+    SelectExtractionConfig,
 )
 
 
@@ -295,11 +295,11 @@ class CorrectCategories(BaseModel):
     category_list: list[CategoryNameOption]
     required_match_threshold: int
 
-    def __init__(self, rule: MatchRule):
+    def __init__(self, rule: OptionMatchRule):
         super().__init__(
             category_list=[
                 CategoryNameOption(name=name, match_type=rule.match_type)
-                for name in rule.match_list
+                for name in rule.patterns
             ],
             required_match_threshold=rule.match_threshold,
         )
@@ -321,7 +321,7 @@ class CorrectCategories(BaseModel):
         return False
 
 
-async def _check_category_by_rules(select_data, rules: list[MatchRule]):
+async def _check_category_by_rules(select_data, rules: list[OptionMatchRule]):
     for rule in rules:
         correct_category_checker = CorrectCategories(rule)
         if not correct_category_checker.execute(select_data):
@@ -330,29 +330,25 @@ async def _check_category_by_rules(select_data, rules: list[MatchRule]):
 
 
 async def get_match_select_option(
-    html: str, extract_category_options: ExtractSelectOption
+    html: str, extract_category_options: SelectExtractionConfig
 ) -> tuple[bool, list[CustomSelectData] | SelectData]:
     select_data_list = extract_select_options(html)
-    if extract_category_options.extract_type == "rule":
-        correct_category_rule = extract_category_options.correct_category
-        incorrect_category_rule = extract_category_options.incorrect_category
+    if extract_category_options.method == "rule":
+        positive_criteria = extract_category_options.positive_criteria
+        negative_criteria = extract_category_options.negative_criteria
         for select_data in select_data_list:
-            if correct_category_rule is not None:
-                if await _check_category_by_rules(
-                    select_data, correct_category_rule.rules
-                ):
-                    if incorrect_category_rule is None:
+            if positive_criteria is not None:
+                if await _check_category_by_rules(select_data, positive_criteria.rules):
+                    if negative_criteria is None:
                         return True, select_data
                     else:
                         if not await _check_category_by_rules(
-                            select_data, incorrect_category_rule.rules
+                            select_data, negative_criteria.rules
                         ):
                             return True, select_data
                 continue
-            if incorrect_category_rule is not None:
-                if await _check_category_by_rules(
-                    select_data, incorrect_category_rule.rules
-                ):
+            if negative_criteria is not None:
+                if await _check_category_by_rules(select_data, negative_criteria.rules):
                     continue
                 return True, select_data
 

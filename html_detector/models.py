@@ -52,27 +52,27 @@ class CustomSelectData(BaseModel):
 
 
 # -------- Rule Model ----------
-class MatchRule(BaseModel):
+class OptionMatchRule(BaseModel):
     match_type: Literal["exact", "contains"] = "exact"
     match_threshold: int = 1
-    match_list: list[str] = Field(default_factory=list)
+    patterns: list[str] = Field(default_factory=list)
 
 
-class CorrectCategory(BaseModel):
+class CategoryCriteria(BaseModel):
     match_threshold: int = 1
-    rules: list[MatchRule] = Field(default_factory=list)
+    rules: list[OptionMatchRule] = Field(default_factory=list)
 
 
-class ExtractSelectOption(BaseModel):
-    extract_type: Literal["rule", "ai"] = Field(
+class SelectExtractionConfig(BaseModel):
+    method: Literal["rule", "ai"] = Field(
         default="rule",
-        description="Method to extract categories: 'rule' or 'ai'",
+        description="Extraction method: 'rule' for pattern matching, 'ai' for LLM.",
     )
-    correct_category: CorrectCategory | None = Field(
+    positive_criteria: CategoryCriteria | None = Field(
         default=None,
-        description="Settings for correct category extraction (required if extract_type is 'rule')",
+        description="Rules to identify valid options.",
     )
-    incorrect_category: CorrectCategory | None = Field(
-        default_factory=None,
-        description="Settings for incorrect category extraction",
+    negative_criteria: CategoryCriteria | None = Field(
+        default=None,
+        description="Rules to exclude invalid options.",
     )
