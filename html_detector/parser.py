@@ -143,7 +143,7 @@ def extract_select_options(html_content: str) -> list[SelectData]:
     return results
 
 
-async def extract_search_elements(html_content: str) -> dict[str, list[str]]:
+def extract_search_elements(html_content: str) -> dict[str, list[str]]:
     soup = BeautifulSoup(html_content, "lxml")
 
     def get_attr_str(tag, attr_name):
@@ -321,7 +321,7 @@ class CorrectCategories(BaseModel):
         return False
 
 
-async def _check_category_by_rules(select_data, rules: list[OptionMatchRule]):
+def _check_category_by_rules(select_data, rules: list[OptionMatchRule]):
     for rule in rules:
         correct_category_checker = CorrectCategories(rule)
         if not correct_category_checker.execute(select_data):
@@ -329,26 +329,26 @@ async def _check_category_by_rules(select_data, rules: list[OptionMatchRule]):
     return True
 
 
-async def get_match_select_option(
-    html: str, extract_category_options: SelectExtractionConfig
+def get_match_select_option(
+    html: str, select_extracion_config: SelectExtractionConfig
 ) -> tuple[bool, list[CustomSelectData] | SelectData]:
     select_data_list = extract_select_options(html)
-    if extract_category_options.method == "rule":
-        positive_criteria = extract_category_options.positive_criteria
-        negative_criteria = extract_category_options.negative_criteria
+    if select_extracion_config.method == "rule":
+        positive_criteria = select_extracion_config.positive_criteria
+        negative_criteria = select_extracion_config.negative_criteria
         for select_data in select_data_list:
             if positive_criteria is not None:
-                if await _check_category_by_rules(select_data, positive_criteria.rules):
+                if _check_category_by_rules(select_data, positive_criteria.rules):
                     if negative_criteria is None:
                         return True, select_data
                     else:
-                        if not await _check_category_by_rules(
+                        if not _check_category_by_rules(
                             select_data, negative_criteria.rules
                         ):
                             return True, select_data
                 continue
             if negative_criteria is not None:
-                if await _check_category_by_rules(select_data, negative_criteria.rules):
+                if _check_category_by_rules(select_data, negative_criteria.rules):
                     continue
                 return True, select_data
 
@@ -407,7 +407,7 @@ def _generate_css_selector(elem, soup):
     return " > ".join(path)
 
 
-async def find_custom_select_candidates(
+def find_custom_select_candidates(
     html: str, original_select: SelectData
 ) -> list[CustomSelectData]:
     soup = BeautifulSoup(html, "lxml")

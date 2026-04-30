@@ -1,9 +1,19 @@
 from enum import Enum
+
 from ._html_detector import refine_xpath, detect_fast
+from .data import EXTRACT_SORT_RULE, EXTRACT_CATEGORY_RULE
+from .parser import get_match_select_option
+
+__all__ = [
+    "detect",
+    "TargetType",
+]
 
 
 class TargetType(Enum):
     SEARCH_RESULT_SELECTOR = "search_result_selector"
+    CATEGORY_SELECT_TAG = "category_select_tag"
+    SORT_SELECT_TAG = "sort_select_tag"
 
 
 def detect(
@@ -30,12 +40,15 @@ def detect(
 
         NotImplementedError: If the specified target type is not supported.
     """
-    if target_type != TargetType.SEARCH_RESULT_SELECTOR:
+    if not isinstance(target_type, TargetType) or target_type not in TargetType:
         raise NotImplementedError(f"Target type {target_type} is not supported.")
-    candidates = detect_fast(html)
-    if not refined:
-        return candidates
-    return refine_xpath(html, candidates)
-
-
-__all__ = ["detect"]
+    match target_type:
+        case TargetType.SEARCH_RESULT_SELECTOR:
+            candidates = detect_fast(html)
+            if not refined:
+                return candidates
+            return refine_xpath(html, candidates)
+        case TargetType.CATEGORY_SELECT_TAG:
+            return get_match_select_option(html, EXTRACT_CATEGORY_RULE)
+        case TargetType.SORT_SELECT_TAG:
+            return get_match_select_option(html, EXTRACT_SORT_RULE)
